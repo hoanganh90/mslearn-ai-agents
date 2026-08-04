@@ -55,12 +55,12 @@ with (
     for item in response.output:
         print("OUTPUT ITEM:", item.type, getattr(item, "server_label", None), getattr(item, "id", None))
         if item.type == "mcp_approval_request" and item.id:
-            approval_responses.append({
-                "type": "mcp_approval_response",
-                "approved": True,
-                "approval_request_id": item.id,
-                "server_label": item.server_label,
-            })
+            approval_responses.append(McpApprovalResponse(
+                type="mcp_approval_response",
+                approved=True,
+                approval_request_id=item.id,
+                server_label=item.server_label
+            ))
     print("Final input list:", approval_responses)
     if approval_responses:
         response = openai_client.responses.create(
