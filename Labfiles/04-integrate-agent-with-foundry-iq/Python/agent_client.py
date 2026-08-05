@@ -18,10 +18,22 @@ print(f"Using agent: {agent_name}\n")
 # TODO: Connect to the project and create a conversation
 # Add your code here to:
 # 1. Create DefaultAzureCredential
+credential = DefaultAzureCredential(
+    exclude_environment_credential=False,
+    exclude_managed_identity_credential=True,
+)
 # 2. Create AIProjectClient with endpoint
+project_client = AIProjectClient(
+    endpoint=project_endpoint, 
+    credential=credential)
 # 3. Get the OpenAI client
+openai_client = project_client.get_openai_client()
 # 4. Get the agent by name
+agent = project_client.agents.get(agent_name=agent_name)
+print(f"Connected to agent: {agent.name} (version: {agent.versions})\n")
 # 5. Create a new conversation
+conversation = openai_client.conversations.create(items=[])
+print(f"Created conversation: {conversation.id}\n")
 
 
 # Conversation history for context (client-side tracking)
@@ -38,14 +50,75 @@ def send_message_to_agent(user_message):
         # TODO: Add user message to conversation and get response
         # Add your code here to:
         # 1. Add the user message to the conversation using conversations.items.create()
+        openai_client.conversations.items.create(
+            conversation.id,
+            items=[{
+                "type": "message",
+                "role": "user",
+                "content": user_message
+            }]
+        )
+
+        # store in conversation history (client-side)
+        conversation_history.append({
+            "role": "user",
+            "content": user_message
+        })
         # 2. Create a response using responses.create() with agent reference
-        # 3. Extract and display the response text
-        # 4. Check for and display any citations
-        # Your code will go here
+        response = openai_client.responses.create(
+            conversation=conversation.id,
+            input=user_message,
+            extra_body={"agent_reference": {"name": agent.name, "type": "agent_reference"}}
+        )
+        # Check if the response output contains an MCP approval request and handle it
+        approval_requests = None
+        if hasattr(response, 'output') and response.output:
+            for item in response.output:
+                if hasattr(item, 'type') and item.type == "mcp_approval_request":
+                    approval_requests = item
+                    break
+        # Handle approval requests if present
+        if approval_requests:
+            print(f"\nAgent requested approval for MCP tool call: {approval_requests.id}")
+            print(f"Server label: {approval_requests.server_label}")
+            # Parse and display the arguments for the MCP tool call
+            import json
+            try:
+                args = json.loads(approval_requests.arguments)
+                print(f"Arguments: {json.dumps(args, indent=2)}")
+            except json.JSONDecodeError:
+                print("Failed to parse MCP tool call arguments.")
+            approval_input = input("Approve this MCP tool call? (y/n): ").strip().lower()
+            if approval_input == 'y':
+                print("Approving MCP tool call...")
+                #Create approval response
+                approval_response = {
+                    
+                    "type": "mcp_approval_response",
+                    "approve": True,
+                    "approval_request_id": approval_requests.id
+                }
+            else:
+                print("Declining MCP tool call...")
+                #Create denial response
+                approval_response = {
+                    "type": "mcp_approval_response",
+                    "approve": False,
+                    "approval_request_id": approval_requests.id
+                }
 
-
-        
-        
+            # Add the approval response to the conversation and get the next response
+            openai_client.conversations.items.create(
+                conversation.id,
+                items=[approval_response]
+            )
+            # Get the next response after approval/denial
+            response = openai_client.responses.create(
+                conversation=conversation.id,
+                input=approval_response,
+                extra_body={"agent_reference": {"name": agent.name, "type": "agent_reference"}}
+            )
+        # 3. Extract and display the response text 
         # Extract the response text
         if response and response.output_text:
             response_text = response.output_text
