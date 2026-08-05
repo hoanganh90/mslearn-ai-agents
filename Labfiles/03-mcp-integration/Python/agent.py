@@ -50,27 +50,28 @@ with (
     )
     print(f"Created message: {response.id}")
 
-    # Process any MCP approval requests that were generated
-    approval_responses = []
-    for item in response.output:
-        print("OUTPUT ITEM:", item.type, getattr(item, "server_label", None), getattr(item, "id", None))
-        if item.type == "mcp_approval_request" and item.id:
-            approval_responses.append(McpApprovalResponse(
+    # Approve any MCP tool calls the agent requests, until it has none left
+    while True:
+        approval_responses: ResponseInputParam = [
+            McpApprovalResponse(
                 type="mcp_approval_response",
-                approved=True,
+                approve=True,
                 approval_request_id=item.id,
-                server_label=item.server_label
-            ))
-    print("Final input list:", approval_responses)
-    if approval_responses:
+            )
+            for item in response.output
+            if item.type == "mcp_approval_request"
+        ]
+        if not approval_responses:
+            break
+
+        print(f"Approving {len(approval_responses)} MCP tool call(s)...")
         response = openai_client.responses.create(
-            previous_response_id=response.id,
+            conversation=conversation.id,
             input=approval_responses,
             extra_body={"agent_reference": {"name": agent.name, "type": "agent_reference"}}
         )
-        print(f"Created follow-up message: {response.id}")
-    else:
-        print("No MCP approval request found; skipping follow-up.")
+
+    print(f"\nAGENT: {response.output_text}\n")
     # Clean up resources by deleting the agent version
     project_client.agents.delete_version(agent.name, agent.version)
     print("Agent deleted successfully.")
