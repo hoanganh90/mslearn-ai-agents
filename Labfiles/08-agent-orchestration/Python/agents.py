@@ -4,6 +4,10 @@ from typing import cast
 from dotenv import load_dotenv
 
 # Add references
+from agent_framework import Message
+from agent_framework.azure import AzureAIAgentClient
+from agent_framework.orchestrations import SequentialBuilder
+from azure.identity import AzureCliCredential
 
 
 load_dotenv()
