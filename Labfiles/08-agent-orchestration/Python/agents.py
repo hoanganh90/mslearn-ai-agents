@@ -17,7 +17,7 @@ async def main():
     summarizer_instructions="""
     Summarize the customer's feedback in one short sentence. Keep it neutral and concise.
     Example output:
-    App crashes during photo upload.
+    App crashes during photo upload.    
     User praises dark mode feature.
     """
 
@@ -34,22 +34,52 @@ async def main():
     """
 
     # Create the chat client
+    credential = AzureCliCredential()
+    async with (
+        AzureAIAgentClient(
+            credential=credential
+        ) as chat_client
+    ):
+        # Create agents
+        summarizer = chat_client.as_agent(
+            instructions=summarizer_instructions,
+            name="Summarizer",
+        )
+
+        classifier = chat_client.as_agent(
+            instructions=classifier_instructions,
+            name="Classifier",
+        )
+
+        action = chat_client.as_agent(
+            instructions=action_instructions,
+            name="Action",
+        )
 
 
-    # Create agents
-
-
-    # Initialize the current feedback
+        # Initialize the current feedback
+        feedback = "I am using a dashboard every day to monitor metrics and it works well." \
+        "But when I am working late at night, the bright screen is hard on my eyes." \
+        "If you add a dark mode, it would be much easier to use the dashboard at night and make the experience more enjoyable." \
+        "I hope you can add this feature soon."
 
 
     # Build sequential orchestration
-
+    workflow = SequentialBuilder(
+        participants=[summarizer, classifier, action] ).build()
 
     # Run and collect outputs
-
+    outputs = list[list[Message]] = []
+    async for event in workflow.run(feedback):
+        if event.type == "output":
+            outputs.append(cast(list[Message], event.data))
 
     # Display outputs
-    
+    if outputs:
+        print("Outputs:")
+        for i, msg in enumerate(outputs[-1], start = 1):
+            name = msg.author_name or ("assistant" if msg.role == "assistant" else "user")
+            print(f"{'-' * 60}\n {i:02d} [{name}]\n{msg.text}")    
     
     
 if __name__ == "__main__":
