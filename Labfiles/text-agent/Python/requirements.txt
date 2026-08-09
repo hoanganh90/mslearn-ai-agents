@@ -1,9 +1,6 @@
 python-dotenv
 azure-identity
-agent-framework-core
-agent-framework-foundry
-agent-framework-orchestrations
-agent_framework_azure_ai
+azure-ai-projects==1.0.0b10
 
 # python -c "import agent_framework.azure as az; print([n for n in dir(az) if not n.startswith('_')])"
 # If AzureAIAgentClient is not listed, either install the required package or check your installation.
