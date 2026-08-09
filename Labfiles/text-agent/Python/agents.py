@@ -8,7 +8,6 @@ from azure.ai.projects import AIProjectClient
 
 
 load_dotenv()
-
 def main():
     try:
         # Clear the console
@@ -17,7 +16,7 @@ def main():
         load_dotenv()
         foundry_endpoint = os.getenv("PROJECT_ENDPOINT")
         agent_name = os.getenv("AZURE_AGENT_NAME")
-        # model_deployment = os.getenv("MODEL_DEPLOYMENT_NAME")
+        model_deployment = os.getenv("MODEL_DEPLOYMENT_NAME")
         # Get project client
         project_client = AIProjectClient(credential=DefaultAzureCredential(), 
                                           endpoint=foundry_endpoint)
@@ -27,13 +26,8 @@ def main():
         # Use the agent to get a response
         prompt = input("Enter your prompt: ")
         response = openai_client.responses.create(
-            input=[{"role": "user", "content": prompt}],
-            extra_body={"agent_reference": {
-                "name": agent_name, 
-                "type": "agent_reference", 
-                # "deployment": model_deployment
-                }
-            }
+            model=model_deployment,
+            input=[{"role": "user", "content": prompt}]
         )
         print(f"{agent_name} Response: {response.output_text}")
 
