@@ -73,6 +73,37 @@ def record_greeting(speech_config):
         print(f"Error recording greeting: {result.reason}")
 # transcribe_message function
 def transcribe_message(speech_config):
-    print("transcribe_message {speech_config}")
+    print("transcribe_message")
+    message_folder = 'message'
+    for file_name in os.listdir(message_folder):
+        if file_name.endswith(".wav"):
+            file_path = os.path.join(message_folder, file_name)
+            print(f"Transcription in progress: {file_name}")
+            # Transcribe the audio file
+            audio_config = speechsdk.audio.AudioConfig(
+                filename=file_path
+            )
+            # Create a speech recognizer
+            speech_recognizer = speechsdk.SpeechRecognizer(
+                speech_config=speech_config,
+                audio_config=audio_config
+            )
+            # Start recognition
+            result = speech_recognizer.recognize_once_async().get()
+            # Check for errors
+            if result.reason == speechsdk.ResultReason.RecognizedSpeech:
+                print(f"Transcription: {result.text}")
+            elif result.reason == speechsdk.ResultReason.NoMatch:
+                print("No speech could be recognized.")
+            elif result.reason == speechsdk.ResultReason.Canceled:
+                cancellation_details = result.cancellation_details
+                print(f"Speech recognition canceled: {cancellation_details.reason}")
+                print(f"Error details: {cancellation_details.error_details}")
+            else:
+                print(f"Error: {result.reason}")
+            # Close the speech recognizer
+            speech_recognizer = None
+            # Delete the audio file
+            os.remove(file_path)
 if __name__ == "__main__":
     main()
