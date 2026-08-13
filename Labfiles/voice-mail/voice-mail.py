@@ -13,14 +13,19 @@ def main():
         # Load Configuration from environment variables
         load_dotenv()
         foundry_endpoint = os.getenv("FOUNDARY_ENDPOINT")
+        foundry_key = os.getenv("FOUNDARY_KEY")
 
-        # Create a credential with a token provider
-        credential = DefaultAzureCredential()
-        # Create a speech configuration using the token and endpoint
-        speech_config = speechsdk.SpeechConfig(
-            token_credential=credential,
-            endpoint=foundry_endpoint
-        )
+        if foundry_key and foundry_key != "your_foundary_key_here":
+            speech_config = speechsdk.SpeechConfig(
+                subscription=foundry_key,
+                endpoint=foundry_endpoint
+            )
+        else:
+            credential = DefaultAzureCredential()
+            speech_config = speechsdk.SpeechConfig(
+                token_credential=credential,
+                endpoint=foundry_endpoint
+            )
         # Loop until user quits
         inputText = ""
         while inputText.lower() != "3":
@@ -47,7 +52,7 @@ def record_greeting(speech_config):
     audio_config = speechsdk.audio.AudioOutputConfig(
         filename=output_file
     )
-    speech_config.speech_synthesis_voice_name = "en-US-Serena: DragonHDLatestNeural"
+    speech_config.speech_synthesis_voice_name = "en-US-AvaNeural"
 
     speech_synthesizer = speechsdk.SpeechSynthesizer(
         speech_config=speech_config,
@@ -60,8 +65,12 @@ def record_greeting(speech_config):
         # Play the WAV reliably on Windows
         winsound.PlaySound(output_file, winsound.SND_FILENAME)
         speech_synthesizer = None
+    elif result.reason == speechsdk.ResultReason.Canceled:
+        cancellation_details = result.cancellation_details
+        print(f"Speech synthesis canceled: {cancellation_details.reason}")
+        print(f"Error details: {cancellation_details.error_details}")
     else:
-        print("Error recording greeting: {}".format(result.reason))
+        print(f"Error recording greeting: {result.reason}")
 # transcribe_message function
 def transcribe_message(speech_config):
     print("transcribe_message {speech_config}")
