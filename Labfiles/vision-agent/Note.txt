@@ -1,0 +1,5 @@
+text_translation_endpoint = os.getenv("MODEL_ENDPOINT")
+text_translation_key = os.getenv("MODEL_KEY")
+
+MODEL_ENDPOINT and MODEL_KEY can be found in the Azure portal under the Language service -> Keys and endpoint (Azure-Translator-Text-translation, then go to View endpoint)
+MODEL_REGION can be found in the Azure portal under the Language service -> Overview
