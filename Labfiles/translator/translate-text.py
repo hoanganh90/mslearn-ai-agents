@@ -16,7 +16,6 @@ def main():
         os.system('cls' if os.name == 'nt' else 'clear')
         # Get configuration Settings
         load_dotenv()
-        foundry_endpoint = os.getenv("MODEL_ENDPOINT")
         text_translation_endpoint = os.getenv("MODEL_ENDPOINT")
         text_translation_key = os.getenv("MODEL_KEY")
         region = os.getenv("MODEL_REGION", "swedencentral")
